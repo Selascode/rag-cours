@@ -1,0 +1,43 @@
+# Environnements virtuels
+.venv/
+venv/
+env/
+ENV/
+
+# Bytecode & cach
+ Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packaging & builds
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Tests & couverture
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Linters & typage
+.mypy_cache/
+.ruff_cache/
+
+# Variables d'environnement & secrets
+.env
+.env.*
+!.env.example
+
+# Découpage RAG & données générées
+data/*
+!data/.gitkeep
+!data/README.md
+
+# Fichiers IDE & OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~

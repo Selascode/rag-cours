@@ -1,0 +1,22 @@
+[project]
+name = "rag-cours"
+version = "0.1.0"
+description = "RAG sur notes de cours Obsidian (ISIA — INSA Rouen)"
+readme = "README.md"
+authors = [
+    { name = "Selasi Maclean", email = "smaclean@insa-rouen.fr" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+rag-cours = "rag_cours:main"
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
