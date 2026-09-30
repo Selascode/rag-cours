@@ -15,7 +15,8 @@ rag-cours/
 │       ├── __init__.py
 │       ├── ingest.py    # Chunking et extraction des notes Obsidian
 │       ├── embed.py     # Vectorisation Gemini et indexation ChromaDB
-│       └── query.py     # Recherche sémantique et génération RAG
+│       ├── query.py     # Recherche sémantique et pipeline RAG (CLI rag-query)
+│       └── generators/  # Backends de génération : base, gemini, anthropic, local
 ├── data/                # Données générées, chunks et bases ChromaDB
 │   ├── chunks.jsonl
 │   └── chromadb/
@@ -24,7 +25,8 @@ rag-cours/
     ├── test_basic.py
     ├── test_ingest.py
     ├── test_embed.py
-    └── test_query.py
+    ├── test_query.py
+    └── test_generators.py
 ```
 
 ## Démarrage rapide
@@ -71,7 +73,7 @@ uv run rag-embed --force
 ```
 
 ### Interrogation RAG (query)
-Poser une question sur vos cours avec recherche sémantique ChromaDB et génération Gemini :
+Poser une question sur vos cours avec recherche sémantique ChromaDB et génération par le backend choisi :
 
 ```bash
 uv run rag-query "Qu'est-ce que le polymorphisme en Java ?"
@@ -81,12 +83,29 @@ uv run rag-query "Qu'est-ce que le polymorphisme en Java ?"
 Options utiles :
 - `--top-k` ou `-k` : Nombre de chunks pertinents à récupérer (défaut : 5)
 - `--matiere` ou `-m` : Filtrer sur une matière spécifique (ex: `-m Java` ou `-m BD`)
-- `--model` : Modèle de génération Gemini (défaut : `gemini-3.8-flash`)
+- `--backend` ou `-b` : Backend de génération `gemini`, `anthropic` ou `local` (défaut : `GENERATOR_BACKEND`, sinon `gemini`)
+- `--model` : Modèle de génération du backend (défaut : celui du backend, voir ci-dessous)
 - `--json` : Sortie structurée au format JSON
 
 Exemple avec filtre :
 ```bash
 uv run rag-query "Comment modéliser une relation 1-N ?" -m BD -k 3
+```
+
+### Backends de génération
+Le backend est choisi par `GENERATOR_BACKEND` dans `.env` (ou `--backend` en CLI) :
+
+| Backend | Implémentation | Variables | Modèle par défaut |
+|---|---|---|---|
+| `gemini` | `generators/gemini.py` | `GEMINI_API_KEY`, `GEMINI_GENERATION_MODEL` | `gemini-3.8-flash` |
+| `anthropic` | `generators/anthropic.py` | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | `claude-opus-5-5` |
+| `local` | `generators/local.py` (Ollama) | `OLLAMA_HOST`, `OLLAMA_MODEL`, `OLLAMA_TIMEOUT` | `qwen2.5:7b` |
+
+La recherche sémantique utilise toujours les embeddings Gemini de l'index ChromaDB :
+`GEMINI_API_KEY` reste nécessaire quel que soit le backend de génération.
+
+```bash
+uv run rag-query -b local "Qu'est-ce qu'une clé étrangère ?"
 ```
 
 ### Tests

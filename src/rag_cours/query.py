@@ -1,4 +1,4 @@
-"""Module d'interrogation RAG : recherche sémantique ChromaDB et génération Gemini."""
+"""Module d'interrogation RAG : recherche sémantique ChromaDB et génération via le backend choisi."""
 
 import argparse
 import json
@@ -6,7 +6,6 @@ import logging
 import os
 import socket
 import sys
-import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -22,10 +21,6 @@ def _ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
 
 socket.getaddrinfo = _ipv4_getaddrinfo
 
-# Suppression du warning AFC verbeux du SDK
-logging.getLogger("google_genai.models").setLevel(logging.ERROR)
-logging.getLogger("google.genai.models").setLevel(logging.ERROR)
-
 try:
     from dotenv import load_dotenv
 
@@ -37,22 +32,11 @@ from google import genai
 from google.genai import types
 import chromadb
 
+from rag_cours.generators import Generator, available_backends, get_generator, resolve_backend
+from rag_cours.generators.base import build_rag_prompt
+from rag_cours.generators.gemini import GeminiGenerator, generate_rag_answer, get_gemini_client
+
 logger = logging.getLogger("rag_cours.query")
-
-
-def get_gemini_client(api_key: Optional[str] = None) -> genai.Client:
-    """Initialise le client Google GenAI avec la clé API résolue."""
-    resolved_key = (
-        api_key
-        or os.environ.get("GEMINI_API_KEY")
-        or os.environ.get("GOOGLE_API_KEY")
-    )
-    if not resolved_key:
-        raise ValueError(
-            "Clé API Gemini introuvable. Veuillez définir la variable d'environnement "
-            "GEMINI_API_KEY (ou GOOGLE_API_KEY), ou créer un fichier .env contenant GEMINI_API_KEY=votre_clef."
-        )
-    return genai.Client(api_key=resolved_key)
 
 
 def embed_query(
@@ -129,104 +113,27 @@ def retrieve_relevant_chunks(
     return chunks
 
 
-def build_rag_prompt(question: str, chunks: List[Dict[str, Any]]) -> str:
-    """Construit un prompt enrichi combinant la question et les extraits de notes de cours."""
-    system_instructions = (
-        "Tu es un assistant pédagogique et tuteur pour les étudiants de l'INSA Rouen (filière ISIA).\n"
-        "Ton objectif est de répondre en français aux questions posées sur les cours en t'appuyant rigoureusement "
-        "sur les extraits de notes de cours fournis ci-dessous.\n\n"
-        "Consignes impératives :\n"
-        "1. Réponds de manière claire, structurée, didactique et directe (utilise des listes ou du markdown propre).\n"
-        "2. Reste fidèle au contenu des notes de cours fournies. Si un extrait aborde un concept sous un angle précis "
-        "ou avec des exemples donnés, reprends-les.\n"
-        "3. Fais référence aux sources dans ta réponse sous la forme [Source 1], [Source 2], etc.\n"
-        "4. Si les extraits fournis ne permettent pas de répondre entièrement à la question, dis-le clairement, "
-        "puis donne les compléments utiles en précisant qu'il s'agit d'une extrapolation pédagogique.\n"
-    )
-
-    if not chunks:
-        context_str = "Aucune note de cours correspondante n'a été trouvée dans la base vectorielle.\n"
-    else:
-        context_parts = []
-        for idx, c in enumerate(chunks, start=1):
-            titre_info = f" > {c['titres_str']}" if c.get("titres_str") else ""
-            part = (
-                f"[Source {idx}]\n"
-                f"Fichier : {c['fichier_source']}{titre_info}\n"
-                f"Matière : {c['matiere']}\n"
-                f"Contenu :\n{c['texte']}\n"
-            )
-            context_parts.append(part)
-        context_str = "\n".join(context_parts)
-
-    prompt = (
-        f"{system_instructions}\n"
-        f"=== EXTRAITS DE COURS DISPONIBLES ===\n"
-        f"{context_str}\n"
-        f"=== QUESTION DE L'ÉTUDIANT ===\n"
-        f"{question}\n\n"
-        f"=== RÉPONSE EN FRANÇAIS ==="
-    )
-    return prompt
-
-
-def generate_rag_answer(
-    client: genai.Client,
-    prompt: str,
-    model_name: str = "gemini-3.8-flash",
-    temperature: float = 0.2,
-    max_retries: int = 3,
-) -> str:
-    """Appelle le modèle Gemini pour générer la réponse à partir du prompt RAG avec retries."""
-    candidate_models = [model_name]
-    for fallback in ["gemini-3.5-flash", "gemini-2.5-flash-lite"]:
-        if fallback not in candidate_models:
-            candidate_models.append(fallback)
-
-    last_err: Optional[Exception] = None
-    for current_model in candidate_models:
-        for attempt in range(max_retries):
-            try:
-                response = client.models.generate_content(
-                    model=current_model,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        temperature=temperature,
-                    ),
-                )
-                return response.text or ""
-            except Exception as err:
-                last_err = err
-                err_str = str(err)
-                if "503" in err_str or "UNAVAILABLE" in err_str or "429" in err_str:
-                    wait_time = 1.5 * (attempt + 1)
-                    logger.warning(
-                        "Modèle %s indisponible temporairement (tentative %d/%d). Réessai dans %.1fs...",
-                        current_model,
-                        attempt + 1,
-                        max_retries,
-                        wait_time,
-                    )
-                    time.sleep(wait_time)
-                else:
-                    break
-
-    raise RuntimeError(f"Échec de la génération RAG : {last_err}")
-
-
 def answer_query(
     question: str,
     top_k: int = 5,
     matiere: Optional[str] = None,
-    generation_model: str = "gemini-3.8-flash",
+    generation_model: Optional[str] = None,
     embedding_model: str = "gemini-embedding-001",
     db_dir: Path = Path("data/chromadb"),
     collection_name: str = "notes_cours",
     api_key: Optional[str] = None,
     client: Optional[genai.Client] = None,
     collection: Optional[chromadb.Collection] = None,
+    backend: Optional[str] = None,
+    generator: Optional[Generator] = None,
 ) -> Dict[str, Any]:
-    """Exécute le pipeline RAG complet pour une question."""
+    """Exécute le pipeline RAG complet pour une question.
+
+    Le retrieval utilise toujours les embeddings Gemini (ceux de l'index ChromaDB).
+    La génération passe par `generator` s'il est fourni, sinon par le backend
+    `backend` / GENERATOR_BACKEND (gemini par défaut), avec le modèle
+    `generation_model` ou celui par défaut du backend.
+    """
     if client is None:
         client = get_gemini_client(api_key=api_key)
 
@@ -247,17 +154,18 @@ def answer_query(
         embedding_model=embedding_model,
     )
 
-    # 2. Construction du prompt
-    prompt = build_rag_prompt(question=question, chunks=chunks)
+    # 2. Génération de la réponse avec le backend sélectionné
+    if generator is None:
+        backend_name = resolve_backend(backend)
+        if backend_name == "gemini":
+            # Réutilise le client Gemini déjà créé pour le retrieval
+            generator = GeminiGenerator(model=generation_model, client=client)
+        else:
+            generator = get_generator(backend_name, model=generation_model)
 
-    # 3. Génération de la réponse avec Gemini
-    reponse = generate_rag_answer(
-        client=client,
-        prompt=prompt,
-        model_name=generation_model,
-    )
+    reponse = generator.generate(question, chunks)
 
-    # 4. Préparation de la liste des sources uniques citées
+    # 3. Préparation de la liste des sources uniques citées
     sources_citees = []
     seen_sources = set()
     for idx, c in enumerate(chunks, start=1):
@@ -279,6 +187,8 @@ def answer_query(
         "sources": sources_citees,
         "matiere_filtre": matiere,
         "top_k": top_k,
+        "backend": generator.name,
+        "modele": generator.model,
     }
 
 
@@ -290,6 +200,9 @@ def format_cli_output(result: Dict[str, Any]) -> str:
     lines.append("=" * 60 + "\n")
 
     lines.append(result["reponse"])
+    if result.get("backend"):
+        modele = f" ({result['modele']})" if result.get("modele") else ""
+        lines.append(f"\n🤖 Généré par : {result['backend']}{modele}")
     lines.append("\n" + "-" * 60)
     lines.append("📚 NOTES SOURCES CITÉES (Fichier + Section) :")
     lines.append("-" * 60)
@@ -310,7 +223,6 @@ def main(argv: Optional[List[str]] = None) -> None:
     """Point d'entrée CLI pour la commande query."""
     default_chroma_dir = "data/chromadb"
     default_collection = "notes_cours"
-    default_generation_model = os.environ.get("GEMINI_GENERATION_MODEL", "gemini-3.8-flash")
     default_embedding_model = "gemini-embedding-001"
 
     parser = argparse.ArgumentParser(
@@ -352,10 +264,21 @@ def main(argv: Optional[List[str]] = None) -> None:
         help=f"Nom de la collection ChromaDB (défaut : {default_collection})",
     )
     parser.add_argument(
+        "--backend",
+        "-b",
+        type=str,
+        choices=available_backends(),
+        default=None,
+        help="Backend de génération (défaut : GENERATOR_BACKEND, sinon gemini)",
+    )
+    parser.add_argument(
         "--model",
         type=str,
-        default=default_generation_model,
-        help=f"Modèle Gemini pour la génération de réponse (défaut : {default_generation_model})",
+        default=None,
+        help=(
+            "Modèle de génération du backend choisi (défaut : GEMINI_GENERATION_MODEL, "
+            "ANTHROPIC_MODEL ou OLLAMA_MODEL selon le backend)"
+        ),
     )
     parser.add_argument(
         "--embedding-model",
@@ -405,6 +328,7 @@ def main(argv: Optional[List[str]] = None) -> None:
             top_k=args.top_k,
             matiere=args.matiere,
             generation_model=args.model,
+            backend=args.backend,
             embedding_model=args.embedding_model,
             db_dir=Path(args.db_dir),
             collection_name=args.collection,
