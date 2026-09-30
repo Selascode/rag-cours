@@ -16,7 +16,8 @@ rag-cours/
 │       ├── ingest.py    # Chunking et extraction des notes Obsidian
 │       ├── embed.py     # Vectorisation Gemini et indexation ChromaDB
 │       ├── query.py     # Recherche sémantique et pipeline RAG (CLI rag-query)
-│       └── generators/  # Backends de génération : base, gemini, anthropic, local
+│       ├── generators/  # Backends de génération : base, gemini, anthropic, local
+│       └── web/         # Interface web FastAPI (app.py + static/)
 ├── data/                # Données générées, chunks et bases ChromaDB
 │   ├── chunks.jsonl
 │   └── chromadb/
@@ -26,7 +27,8 @@ rag-cours/
     ├── test_ingest.py
     ├── test_embed.py
     ├── test_query.py
-    └── test_generators.py
+    ├── test_generators.py
+    └── test_web.py
 ```
 
 ## Démarrage rapide
@@ -107,6 +109,22 @@ La recherche sémantique utilise toujours les embeddings Gemini de l'index Chrom
 ```bash
 uv run rag-query -b local "Qu'est-ce qu'une clé étrangère ?"
 ```
+
+### Interface web locale
+Lancer le serveur puis ouvrir http://127.0.0.1:8000 :
+
+```bash
+uv run rag-web            # options : --host, --port
+```
+
+- Question, filtre par matière, choix du backend (défaut : `GENERATOR_BACKEND`) et nombre de sources.
+- Réponse rendue en markdown façon Obsidian (thème sombre, callouts `> [!type]` stylés et
+  pliables, coloration du code, wikilinks, tags) ; chaque `[Source N]` renvoie vers sa source.
+- Sources numérotées, chacune avec un lien `obsidian://open?vault=...&file=...` et son extrait.
+  Le nom du vault se règle avec `OBSIDIAN_VAULT_NAME` (défaut : `Programming_travel`).
+- API : `POST /api/ask`, `GET /api/config` (documentation sur `/api/docs`).
+- Les bibliothèques de rendu (marked, DOMPurify, highlight.js) et les polices sont chargées
+  depuis un CDN ; hors ligne, la réponse s'affiche en texte brut.
 
 ### Tests
 Exécuter l'ensemble des tests automatisés :

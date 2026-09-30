@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RAG Cours</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <h1>Notes de cours</h1>
+      <p class="subtitle">Pose une question : la réponse s'appuie sur ton vault Obsidian.</p>
+    </header>
+
+    <form id="ask-form" class="ask-form" autocomplete="off">
+      <textarea id="question" name="question" rows="3" required
+        placeholder="Ex : Quelle est la différence entre surcharge et redéfinition en Java ?"></textarea>
+      <div class="ask-controls">
+        <label>Matière
+          <select id="matiere"><option value="">Toutes</option></select>
+        </label>
+        <label>Backend
+          <select id="backend"></select>
+        </label>
+        <label>Sources
+          <input id="top-k" type="number" min="1" max="20" value="5">
+        </label>
+        <button id="submit" type="submit">Demander</button>
+      </div>
+      <p class="hint"><kbd>Entrée</kbd> pour envoyer · <kbd>Maj</kbd>+<kbd>Entrée</kbd> pour un retour à la ligne</p>
+    </form>
+
+    <section id="status" class="status" hidden></section>
+
+    <article id="answer" class="answer" hidden>
+      <div id="answer-meta" class="answer-meta"></div>
+      <div id="answer-body" class="markdown-rendered"></div>
+    </article>
+
+    <section id="sources" class="sources" hidden>
+      <h2>Sources</h2>
+      <ol id="sources-list" class="sources-list"></ol>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

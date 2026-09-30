@@ -84,9 +84,13 @@ variable d'environnement, pas en dur dans le code :
 ## Avancement
 - Ingestion (`ingest.py`) : fonctionnelle, produit `data/chunks.jsonl`.
 - Embeddings (`embed.py`) : fonctionnel avec ChromaDB (`data/chromadb/`).
-- Génération (`query.py`) : fonctionnelle avec l'API Gemini, citations 
-  fichier + section.
-- Tests unitaires en place pour ingestion, embeddings et query.
+- Génération (`query.py`) : pipeline RAG avec citations fichier + section ; 
+  backend choisi par `GENERATOR_BACKEND` (`generators/` : gemini, 
+  anthropic, local/Ollama), option `--backend` en CLI.
+- Interface web (`web/`, commande `rag-web`) : FastAPI + page statique 
+  sombre façon Obsidian, liens `obsidian://` vers les sources.
+- Tests unitaires en place pour ingestion, embeddings, query, 
+  générateurs et web.
 - `.env` / `.env.example` déjà configurés pour les clés API.
 
 ## Objectif du jour

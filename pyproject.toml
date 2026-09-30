@@ -22,6 +22,7 @@ rag-cours = "rag_cours:main"
 rag-ingest = "rag_cours.ingest:main"
 rag-embed = "rag_cours.embed:main"
 rag-query = "rag_cours.query:main"
+rag-web = "rag_cours.web.app:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
