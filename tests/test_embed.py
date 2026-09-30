@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from embed import (
+from rag_cours.embed import (
     ChromaDatabase,
     EmbeddingState,
     GeminiEmbedder,

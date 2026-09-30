@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from query import (
+from rag_cours.query import (
     answer_query,
     build_rag_prompt,
     embed_query,

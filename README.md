@@ -10,15 +10,12 @@ rag-cours/
 ├── pyproject.toml       # Configuration du projet et dépendances uv
 ├── .gitignore           # Fichiers et dossiers ignorés par git
 ├── README.md
-├── src/                 # Code source de l'application
-│   ├── ingest.py        # Chunking et extraction des notes Obsidian
-│   ├── embed.py         # Vectorisation Gemini et indexation ChromaDB
-│   ├── query.py         # Recherche sémantique et génération RAG
-│   └── rag_cours/
+├── src/
+│   └── rag_cours/       # Package Python (code source de l'application)
 │       ├── __init__.py
-│       ├── ingest.py
-│       ├── embed.py
-│       └── query.py
+│       ├── ingest.py    # Chunking et extraction des notes Obsidian
+│       ├── embed.py     # Vectorisation Gemini et indexation ChromaDB
+│       └── query.py     # Recherche sémantique et génération RAG
 ├── data/                # Données générées, chunks et bases ChromaDB
 │   ├── chunks.jsonl
 │   └── chromadb/
@@ -26,7 +23,8 @@ rag-cours/
     ├── __init__.py
     ├── test_basic.py
     ├── test_ingest.py
-    └── test_embed.py
+    ├── test_embed.py
+    └── test_query.py
 ```
 
 ## Démarrage rapide
@@ -56,7 +54,7 @@ Découper les notes de cours Obsidian en chunks JSONL :
 
 ```bash
 uv run rag-ingest
-# ou: uv run python src/ingest.py
+# ou: uv run python -m rag_cours.ingest
 ```
 
 ### Indexation des embeddings (incrémentale)
@@ -64,7 +62,7 @@ Générer les embeddings avec `gemini-embedding-001` et indexer dans ChromaDB lo
 
 ```bash
 uv run rag-embed
-# ou: uv run python src/embed.py
+# ou: uv run python -m rag_cours.embed
 ```
 
 Pour forcer une réindexation complète de tous les chunks :
@@ -77,7 +75,7 @@ Poser une question sur vos cours avec recherche sémantique ChromaDB et généra
 
 ```bash
 uv run rag-query "Qu'est-ce que le polymorphisme en Java ?"
-# ou: uv run python src/query.py "Qu'est-ce que le polymorphisme en Java ?"
+# ou: uv run python -m rag_cours.query "Qu'est-ce que le polymorphisme en Java ?"
 ```
 
 Options utiles :

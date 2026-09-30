@@ -52,16 +52,18 @@ variable d'environnement, pas en dur dans le code :
 - `src/rag_cours/generators/gemini.py`, `anthropic.py`, `local.py` : 
   implémentations concrètes.
 - Sélection via `GENERATOR_BACKEND=gemini|anthropic|local`.
-- Même logique déjà en place côté embeddings (`EMBEDDING_BACKEND`) : 
-  suivre le même pattern, pas en réinventer un autre.
+- Les embeddings restent en Gemini uniquement (pas de sélecteur 
+  `EMBEDDING_BACKEND` pour l'instant). Si on en ajoute un, réutiliser le 
+  pattern de sélection des générateurs. Changer de modèle d'embedding 
+  impose de réindexer ChromaDB : `GEMINI_API_KEY` reste donc requise pour 
+  le retrieval, quel que soit `GENERATOR_BACKEND`.
 
 ## Contraintes
 - Ne jamais écrire dans le dossier du vault : lecture seule.
-- Le code "canonique" du projet est dans `src/rag_cours/` (le package 
-  exposé par pyproject.toml, script `rag-query`). Les fichiers 
-  `ingest.py`/`embed.py`/`query.py` à la racine de `src/` sont d'anciennes 
-  copies : ne pas les modifier, les supprimer une fois vérifié qu'ils sont 
-  bien redondants.
+- Tout le code du projet est dans le package `src/rag_cours/` (exposé par 
+  pyproject.toml, scripts `rag-ingest`, `rag-embed`, `rag-query`). Les 
+  tests importent depuis `rag_cours.*`. Ne pas recréer de modules à la 
+  racine de `src/`.
 - Python 3.12 via pyenv, dépendances gérées avec uv (pyproject.toml).
 - Les tests existants (`tests/test_ingest.py`, `test_embed.py`, 
   `test_query.py`, `test_basic.py`) doivent continuer à passer ; en ajouter 
