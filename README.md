@@ -1,4 +1,4 @@
-# RAG sur notes de cours Obsidian (ISIA — INSA Rouen)
+# RAG sur notes de cours Obsidian  
 
 Projet de système RAG (Retrieval-Augmented Generation) sur les notes de cours Obsidian.
 
