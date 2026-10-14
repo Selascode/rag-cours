@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from ingest import (
+from rag_cours.ingest import (
     Block,
     chunk_document,
     extract_inline_tags,

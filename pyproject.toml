@@ -7,10 +7,22 @@ authors = [
     { name = "Selasi Maclean", email = "smaclean@insa-rouen.fr" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "anthropic>=1.10.0",
+    "chromadb>=1.5.9",
+    "fastapi>=0.142.2",
+    "google-genai>=2.25.0",
+    "httpx>=0.28.1",
+    "python-dotenv>=1.2.3",
+    "uvicorn>=0.54.0",
+]
 
 [project.scripts]
 rag-cours = "rag_cours:main"
+rag-ingest = "rag_cours.ingest:main"
+rag-embed = "rag_cours.embed:main"
+rag-query = "rag_cours.query:main"
+rag-web = "rag_cours.web.app:main"
 
 [build-system]
 requires = ["uv_build>=0.12.5,<0.13.0"]
